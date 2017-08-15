@@ -16,12 +16,7 @@ parser.add_argument('--test_percent', default=0.1, help='percentage of test set'
 parser.add_argument('--lda', default='True', help='preparing data for LDA model')
 opt = parser.parse_args()
 print(opt)
-"""
-train_set = 0.8
-valid_set = 0.1
-test_set = 0.1
-lda = True # LDA model
-"""
+
 
 # Save dataframe to .txt file
 def saveToTxt(df, file_name):
