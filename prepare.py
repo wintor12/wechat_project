@@ -16,11 +16,16 @@ parser.add_argument('--test_percent', default=0.1, help='percentage of test set'
 parser.add_argument('--lda', default='True', help='preparing data for LDA model')
 opt = parser.parse_args()
 print(opt)
-
+"""
+train_set = 0.8
+valid_set = 0.1
+test_set = 0.1
+lda = True # LDA model
+"""
 
 # Save dataframe to .txt file
 def saveToTxt(df, file_name):
-    df.to_csv(opt.data + file_name, header=None, index=None, sep=' ')
+    df.to_csv(file_name, header=None, index=None, sep=' ')
 
 
 # Get xs and ys (columns '标题', '正文', '点赞数')
@@ -47,7 +52,7 @@ if opt.lda:
         for j in range(np.min(df['月']), np.max(df['月'])+1):
             df_body = df[['标题','正文']][(df['年']==i) & (df['月']==j)]
             if not (df_body.empty):
-                saveToTxt(df_body, str(i)+'_'+str(j)+'.txt')
+                saveToTxt(df_body, './lda/' + str(i)+'_'+str(j)+'.txt')
 
 # Split data into training, validation, test data sets, psedudo randomized
 train, validate, test = np.split(df.sample(frac=1, random_state=123), 
@@ -67,15 +72,15 @@ y_validate = (y_validate - train_mean) / train_std
 y_test = (y_test - train_mean) / train_std
 
 # Save data sets to .txt files
-saveToTxt(title_train, 'title_train.txt')
-saveToTxt(body_train, 'body_train.txt')
-saveToTxt(y_train, 'y_train.txt')
-saveToTxt(title_validate, 'title_validate.txt')
-saveToTxt(body_validate, 'body_validate.txt')
-saveToTxt(y_validate, 'y_validate.txt')
-saveToTxt(title_test, 'title_test.txt')
-saveToTxt(body_test, 'body_test.txt')
-saveToTxt(y_test, 'y_test.txt')
+saveToTxt(title_train, opt.data + 'title_train.txt')
+saveToTxt(body_train, opt.data + 'body_train.txt')
+saveToTxt(y_train, opt.data + 'y_train.txt')
+saveToTxt(title_validate, opt.data + 'title_validate.txt')
+saveToTxt(body_validate, opt.data + 'body_validate.txt')
+saveToTxt(y_validate, opt.data + 'y_validate.txt')
+saveToTxt(title_test, opt.data + 'title_test.txt')
+saveToTxt(body_test, opt.data + 'body_test.txt')
+saveToTxt(y_test, opt.data + 'y_test.txt')
 
 print('Data preparation done.')
 
