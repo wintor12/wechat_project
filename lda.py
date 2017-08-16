@@ -36,11 +36,14 @@ def main():
     res = ''
     path = './lda'
     fnames = [x for x in os.listdir(path) if x.startswith('token')]
+    fnames = sorted(fnames, key=lambda x: 100 * int(x[:-4].split('_')[1:][0]) + \
+                    int(x[:-4].split('_')[1:][1]), reverse=True)
     for fname in fnames:
-        print(fname[6:])
-        res += fname[6:] + '\n'
+        print(fname[6:-4])
+        res += fname[6:-4]
         with codecs.open(os.path.join(path, fname), 'r', 'utf-8') as f:
             samples = f.readlines()
+            res += '  total articles: ' + str(len(samples)) + '\n'
             print('total articles: ' + str(len(samples)))
             message = runLDA(samples)
             res += message + '\n'
