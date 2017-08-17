@@ -10,6 +10,7 @@ parser.add_argument('--mode', default='train', type=str, help='train | lda')
 
 opt = parser.parse_args()
 
+
 def preprocessSrc(path, stopwords, remove_sentences):
     '''
     return list of text, each text is a string of tokens separated by ' ' 
