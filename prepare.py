@@ -60,11 +60,11 @@ title_validate, body_validate, y_validate = getData(validate)
 title_test, body_test, y_test = getData(test)
 
 # Standardize y ('点赞数')
-train_mean = np.mean(y_train, 0)
-train_std = np.std(y_train, 0)
-y_train = (y_train - train_mean) / train_std
-y_validate = (y_validate - train_mean) / train_std
-y_test = (y_test - train_mean) / train_std
+# train_mean = np.mean(y_train, 0)
+# train_std = np.std(y_train, 0)
+# y_train = (y_train - train_mean) / train_std
+# y_validate = (y_validate - train_mean) / train_std
+# y_test = (y_test - train_mean) / train_std
 
 # Save data sets to .txt files
 saveToTxt(title_train, opt.data + 'title_train.txt')

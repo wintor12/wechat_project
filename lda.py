@@ -30,7 +30,7 @@ def runLDA(samples):
     lda.fit(tf)
     tf_feature_names = tf_vectorizer.get_feature_names()
     return print_top_words(lda, tf_feature_names, n_top_words)
-    
+
 
 def main():
     res = ''
@@ -42,7 +42,7 @@ def main():
         print(fname[6:-4])
         res += fname[6:-4]
         with codecs.open(os.path.join(path, fname), 'r', 'utf-8') as f:
-            samples = f.readlines()
+            samples = [x for x in f.readlines() if len(x.split()) > 10]
             res += '  total articles: ' + str(len(samples)) + '\n'
             print('total articles: ' + str(len(samples)))
             message = runLDA(samples)
