@@ -6,7 +6,7 @@ def loadText(path):
     with codecs.open(path, 'r', 'utf-8') as p:
         texts = [x.strip() for x in p.readlines()]
     return texts
-    
+
 
 def loadUpvotes(path):
     with codecs.open(path, 'r', 'utf-8') as p:

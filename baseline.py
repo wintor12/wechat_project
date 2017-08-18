@@ -17,7 +17,6 @@ parser.add_argument('--classification', action='store_true',
                     help='if true, use classfication model')
 
 
-
 opt = parser.parse_args()
 
 
