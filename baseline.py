@@ -36,12 +36,16 @@ def criterion(crit, pred, y):
 
 def regression(model, tf_train, tf_val, tf_test, y_train, y_val, y_test):
     if model == 'random':
+        np.random.seed(1234)
         val_pred = (np.max(y_train) - np.min(y_train)) * \
                    np.random.random_sample(y_val.shape)
+        np.random.seed(1234)
         test_pred = (np.max(y_train) - np.min(y_train)) * \
                     np.random.random_sample(y_test.shape)
     elif model == 'random_small':
+        np.random.seed(1234)
         val_pred = np.random.random_sample(y_val.shape)
+        np.random.seed(1234)
         test_pred = np.random.random_sample(y_test.shape)
         if not opt.log:
             val_pred = 10 * val_pred
@@ -51,18 +55,6 @@ def regression(model, tf_train, tf_val, tf_test, y_train, y_val, y_test):
         val_pred = model.predict(tf_val)
         test_pred = model.predict(tf_test)
     return val_pred, test_pred
-
-
-def random_predict(y_train, y_val, y_test):
-    np.random.seed(1234)
-    val_pred = (np.max(y_train) - np.min(y_train)) * np.random.random_sample(y_val.shape)
-    val_loss = criterion(crit, val_pred, y_val)
-    print(val_loss)
-    np.random.seed(1234)
-    test_pred = (np.max(y_train) - np.min(y_train)) * np.random.random_sample(y_test.shape)
-    test_loss = criterion(crit, test_pred, y_test)
-    print(test_loss)
-    return val_loss, test_loss
     
 
 def main():
@@ -114,8 +106,7 @@ def main():
     print(val_loss)
     test_loss = criterion(crit, test_pred, y_test)
     print(test_loss)
-       
-#    random_predict(y_train, y_val, y_test)
+
     
 if __name__ == "__main__":
     main()
