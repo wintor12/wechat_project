@@ -1,10 +1,11 @@
 from sklearn.feature_extraction.text import CountVectorizer
 import utils
 import numpy as np
-from sklearn.ensemble.forest import RandomForestRegressor
+from sklearn.ensemble.forest import RandomForestRegressor, RandomForestClassifier
 from sklearn import svm
 from sklearn import linear_model
 import argparse
+from sklearn.metrics import accuracy_score
 
 
 parser = argparse.ArgumentParser()
@@ -12,6 +13,10 @@ parser.add_argument('--log', action='store_true',
                     help='if true, y = log(y + 1)')
 parser.add_argument('--crit', default='mse', type=str, help='mse | mae')
 parser.add_argument('--model', default='lasso', type=str, help='lasso | rf | svm | random | random_small')
+parser.add_argument('--classification', action='store_true',
+                    help='if true, use classfication model')
+
+
 
 opt = parser.parse_args()
 
@@ -32,6 +37,8 @@ def criterion(crit, pred, y):
         loss = np.mean(np.power(pred - y, 2))
     elif crit == 'mae':
         loss = np.mean(np.absolute(pred - y))
+    elif crit == 'acc':
+        loss = accuracy_score(y, pred)
     return loss
 
 def regression(model, tf_train, tf_val, tf_test, y_train, y_val, y_test):
@@ -55,7 +62,26 @@ def regression(model, tf_train, tf_val, tf_test, y_train, y_val, y_test):
         val_pred = model.predict(tf_val)
         test_pred = model.predict(tf_test)
     return val_pred, test_pred
-    
+
+
+def classify(model, tf_train, tf_val, tf_test, y_train, y_val, y_test):
+    if model == 'random':
+        np.random.seed(1234)
+        val_pred = (np.max(y_train) - np.min(y_train)) * \
+                   np.random.randint(0, 2, y_val.shape)
+        np.random.seed(1234)
+        test_pred = (np.max(y_train) - np.min(y_train)) * \
+                    np.random.randint(0, 2, y_test.shape)
+    elif model == 'random_small':
+        val_pred = np.zeros(y_val.shape)
+        test_pred = np.zeros(y_test.shape)
+    else:
+        model.fit(tf_train, y_train)
+        val_pred = model.predict(tf_val)
+        test_pred = model.predict(tf_test)
+    return val_pred, test_pred
+
+
 
 def main():
     X_train, X_val, X_test, t_train, t_val, \
@@ -72,6 +98,22 @@ def main():
     # print(sorted(X_train, key=lambda x: len(x))[:3])
 
     y_train, y_val, y_test = np.array(y_train), np.array(y_val), np.array(y_test)
+    y = np.concatenate((y_train, y_val, y_test), axis = 0)
+    print(y.shape)
+    
+    if opt.classification:
+        y[y <= 10] = 0
+        y[np.logical_and(y > 10, y <= 20)] = 1
+        y[y > 20] = 2
+
+        print(y[y == 0].shape, y[y == 1].shape, y[y == 2].shape)
+        y_train, y_val, y_test = y[:y_train.shape[0]], \
+                                 y[y_train.shape[0]: y_train.shape[0] + y_val.shape[0]], \
+                                 y[y_train.shape[0] + y_val.shape[0]:]
+        print(y_train.shape, y_val.shape, y_test.shape)
+        print(y_train[y_train == 0].shape, y_train[y_train == 1].shape,
+              y_train[y_train == 2].shape)
+        opt.crit = 'acc'
 
     if opt.log:
         y_train, y_val, y_test = np.log(y_train + 1), \
@@ -86,11 +128,14 @@ def main():
     tf_test = tf_vectorizer.transform(X_test)
 
     if opt.model == 'rf':
-        model = RandomForestRegressor(n_estimators = 100)
+        model = RandomForestRegressor(n_estimators = 100) \
+                if not opt.classification else RandomForestClassifier(n_estimators = 100)
     elif opt.model == 'lasso':
-        model = linear_model.Lasso(alpha = 0.01)
+        model = linear_model.Lasso(alpha = 0.01) if not opt.classification else \
+                linear_model.LogisticRegression(penalty='l1')
     elif opt.model == 'svm':
-        model = svm.SVR()
+        model = svm.SVR() if not opt.classification else \
+                svm.SVC()
     elif opt.model == 'random':
         model = 'random'
     elif opt.model == 'random_small':
@@ -98,14 +143,19 @@ def main():
     else:
         raise Exception('Model can only be rf | lasso | svm | random')
     print(model)
-    
-    val_pred, test_pred = regression(model, tf_train, tf_val, tf_test,
-                                     y_train, y_val, y_test)
+
+    if opt.classification:
+        val_pred, test_pred = classify(model, tf_train, tf_val, tf_test,
+                                       y_train, y_val, y_test)
+    else:
+        val_pred, test_pred = regression(model, tf_train, tf_val, tf_test,
+                                         y_train, y_val, y_test)
+
     crit = opt.crit
     val_loss = criterion(crit, val_pred, y_val)
-    print(val_loss)
+    print('val_loss', val_loss)
     test_loss = criterion(crit, test_pred, y_test)
-    print(test_loss)
+    print('test_loss', test_loss)
 
     
 if __name__ == "__main__":
