@@ -25,8 +25,8 @@ def saveToTxt(df, file_name):
 
 # Get xs and ys (columns '标题', '正文', '点赞数')
 def getData(df):
-    title, body, y = df['标题'], df['正文'], df['点赞数']
-    return title, body, y
+    title, body, y, v = df['标题'], df['正文'], df['点赞数'], df['阅读数']
+    return title, body, y, v
 
 
 print('Start to prepare data...')
@@ -55,9 +55,9 @@ train, validate, test = np.split(df.sample(frac=1, random_state=123),
                          int((opt.train_percent + opt.valid_percent)*len(df))])
 
 
-title_train, body_train, y_train = getData(train)
-title_validate, body_validate, y_validate = getData(validate)
-title_test, body_test, y_test = getData(test)
+title_train, body_train, y_train, v_train = getData(train)
+title_validate, body_validate, y_validate, v_validate = getData(validate)
+title_test, body_test, y_test, v_test = getData(test)
 
 # Standardize y ('点赞数')
 # train_mean = np.mean(y_train, 0)
@@ -70,12 +70,15 @@ title_test, body_test, y_test = getData(test)
 saveToTxt(title_train, opt.data + 'title_train.txt')
 saveToTxt(body_train, opt.data + 'body_train.txt')
 saveToTxt(y_train, opt.data + 'y_train.txt')
+saveToTxt(v_train, opt.data + 'v_train.txt')
 saveToTxt(title_validate, opt.data + 'title_validate.txt')
 saveToTxt(body_validate, opt.data + 'body_validate.txt')
 saveToTxt(y_validate, opt.data + 'y_validate.txt')
+saveToTxt(v_validate, opt.data + 'v_validate.txt')
 saveToTxt(title_test, opt.data + 'title_test.txt')
 saveToTxt(body_test, opt.data + 'body_test.txt')
 saveToTxt(y_test, opt.data + 'y_test.txt')
+saveToTxt(v_test, opt.data + 'v_test.txt')
 
 print('Data preparation done.')
 

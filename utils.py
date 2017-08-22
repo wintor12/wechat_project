@@ -26,4 +26,8 @@ def loadData():
     y_train, y_val, y_test = (loadUpvotes(os.path.join(path, 'y_train.txt')),
                               loadUpvotes(os.path.join(path, 'y_validate.txt')),
                               loadUpvotes(os.path.join(path, 'y_test.txt')))
-    return X_train, X_val, X_test, title_train, title_val, title_test, y_train, y_val, y_test
+    v_train, v_val, v_test = (loadUpvotes(os.path.join(path, 'v_train.txt')),
+                              loadUpvotes(os.path.join(path, 'v_validate.txt')),
+                              loadUpvotes(os.path.join(path, 'v_test.txt')))
+    return X_train, X_val, X_test, title_train, title_val, title_test, \
+        y_train, y_val, y_test, v_train, v_val, v_test

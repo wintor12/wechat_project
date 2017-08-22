@@ -11,13 +11,17 @@ from sklearn.metrics import accuracy_score
 parser = argparse.ArgumentParser()
 parser.add_argument('--log', action='store_true',
                     help='if true, y = log(y + 1)')
+parser.add_argument('--label', default='upvote',
+                    help='upvote | view')
 parser.add_argument('--crit', default='mse', type=str, help='mse | mae')
 parser.add_argument('--model', default='lasso', type=str, help='lasso | rf | svm | random | random_small')
 parser.add_argument('--classification', action='store_true',
                     help='if true, use classfication model')
 
 
+
 opt = parser.parse_args()
+print(opt)
 
 
 def filter_text(X, T, Y):
@@ -83,33 +87,57 @@ def classify(model, tf_train, tf_val, tf_test, y_train, y_val, y_test):
 
 
 def main():
-    X_train, X_val, X_test, t_train, t_val, \
-        t_test, y_train, y_val, y_test = utils.loadData()
+    X_train, X_val, X_test, t_train, t_val, t_test, \
+        y_train, y_val, y_test, v_train, v_val, v_test = utils.loadData()
+
+    # Use view as the label
+    if opt.label == 'view':
+        y_train, y_val, y_test = v_train, v_val, v_test
+
+    print('Original dataset: train | val | test')
     print(len(X_train), len(X_val), len(X_test))
-    print(len(t_train), len(t_val), len(t_test))
-    print(len(y_train), len(y_val), len(y_test))
+    assert len(X_train) == len(t_train) == len(y_train), \
+        'train size of texts, titles, labels not match'
+    assert len(X_val) == len(t_val) == len(y_val), \
+        'val size of texts, titles, labels not match'
+    assert len(X_test) == len(t_test) == len(y_test), \
+        'test size of texts, titles, labels not match'
+
     X_train, t_train, y_train = filter_text(X_train, t_train, y_train)
     X_val, t_val, y_val = filter_text(X_val, t_val, y_val)
     X_test, t_test, y_test = filter_text(X_test, t_test, y_test)
+    print('filtered dataset: train | val | test')
     print(len(X_train), len(X_val), len(X_test))
-    print(len(t_train), len(t_val), len(t_test))
-    print(len(y_train), len(y_val), len(y_test))
+    assert len(X_train) == len(t_train) == len(y_train), \
+        'train size of texts, titles, labels not match'
+    assert len(X_val) == len(t_val) == len(y_val), \
+        'val size of texts, titles, labels not match'
+    assert len(X_test) == len(t_test) == len(y_test), \
+        'test size of texts, titles, labels not match'
+
     # print(sorted(X_train, key=lambda x: len(x))[:3])
 
     y_train, y_val, y_test = np.array(y_train), np.array(y_val), np.array(y_test)
     y = np.concatenate((y_train, y_val, y_test), axis = 0)
-    print(y.shape)
+    print('total data: ', y.shape)
     
     if opt.classification:
-        y[y <= 10] = 0
-        y[np.logical_and(y > 10, y <= 20)] = 1
-        y[y > 20] = 2
+        if opt.label == 'view':
+            y[y < 8000] = 0
+            y[np.logical_and(y >= 8000, y <= 13000)] = 1
+            y[y > 13000] = 2
+        else:
+            y[y <= 10] = 0
+            y[np.logical_and(y > 10, y <= 20)] = 1
+            y[y > 20] = 2
 
+        print('data distribution in whole dataset y=0 | y=1 | y=2')
         print(y[y == 0].shape, y[y == 1].shape, y[y == 2].shape)
         y_train, y_val, y_test = y[:y_train.shape[0]], \
                                  y[y_train.shape[0]: y_train.shape[0] + y_val.shape[0]], \
                                  y[y_train.shape[0] + y_val.shape[0]:]
-        print(y_train.shape, y_val.shape, y_test.shape)
+
+        print('data distribution in training set y=0 | y=1 | y=2')
         print(y_train[y_train == 0].shape, y_train[y_train == 1].shape,
               y_train[y_train == 2].shape)
         opt.crit = 'acc'
@@ -151,6 +179,7 @@ def main():
                                          y_train, y_val, y_test)
 
     crit = opt.crit
+    print('criterion', crit)
     val_loss = criterion(crit, val_pred, y_val)
     print('val_loss', val_loss)
     test_loss = criterion(crit, test_pred, y_test)
