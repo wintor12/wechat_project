@@ -5,7 +5,7 @@ from sklearn.ensemble.forest import RandomForestRegressor, RandomForestClassifie
 from sklearn import svm
 from sklearn import linear_model
 import argparse
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 
 
 parser = argparse.ArgumentParser()
@@ -44,6 +44,7 @@ def criterion(crit, pred, y):
         loss = accuracy_score(y, pred)
     return loss
 
+
 def regression(model, tf_train, tf_val, tf_test, y_train, y_val, y_test):
     if model == 'random':
         np.random.seed(1234)
@@ -70,11 +71,9 @@ def regression(model, tf_train, tf_val, tf_test, y_train, y_val, y_test):
 def classify(model, tf_train, tf_val, tf_test, y_train, y_val, y_test):
     if model == 'random':
         np.random.seed(1234)
-        val_pred = (np.max(y_train) - np.min(y_train)) * \
-                   np.random.randint(0, 2, y_val.shape)
+        val_pred = np.random.randint(np.min(y_val), np.max(y_val) + 1, y_val.shape)
         np.random.seed(1234)
-        test_pred = (np.max(y_train) - np.min(y_train)) * \
-                    np.random.randint(0, 2, y_test.shape)
+        test_pred = np.random.randint(np.min(y_test), np.max(y_test) + 1, y_test.shape)
     elif model == 'random_small':
         val_pred = np.zeros(y_val.shape)
         test_pred = np.zeros(y_test.shape)
@@ -140,6 +139,9 @@ def main():
         print('data distribution in training set y=0 | y=1 | y=2')
         print(y_train[y_train == 0].shape, y_train[y_train == 1].shape,
               y_train[y_train == 2].shape)
+        print('data distribution in test set y=0 | y=1 | y=2')
+        print(y_test[y_test == 0].shape, y_test[y_test == 1].shape,
+              y_test[y_test == 2].shape)
         opt.crit = 'acc'
 
     if opt.log:
@@ -184,6 +186,9 @@ def main():
     print('val_loss', val_loss)
     test_loss = criterion(crit, test_pred, y_test)
     print('test_loss', test_loss)
+    print(test_pred.shape, y_test.shape)
+    print('confusion matrix')
+    print(confusion_matrix(y_test, test_pred))
 
     
 if __name__ == "__main__":
