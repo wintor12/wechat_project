@@ -87,7 +87,11 @@ def predict(model, posts_by_day, tf_test):
     test = np.insert(test, len(test[0]), id, axis=1)
     print('test data: ', test.shape)
     
-    test_pred = np.empty((length,1),dtype="int" )
+    if opt.classification:
+        test_pred = np.empty((length,1),dtype="int" )
+    else:
+        test_pred = np.empty((length,1))
+        
     for daily_posts in posts_by_day:
         #print("each day's posts' shape: ", daily_posts.shape)
         num = len(daily_posts)
