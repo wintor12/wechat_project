@@ -1,3 +1,4 @@
+
 """
 Prepare data
 """
@@ -20,7 +21,7 @@ def saveToTxt(df, file_name):
 
 # Get xs and ys (columns '发布位置','标题', '正文', '阅读数','发布时间')
 def getData(df):
-    position, title, body, y = df['发布位置'], df['标题'], df['正文'], df['阅读数'], df['发布时间']
+    position, title, body, y, time = df['发布位置'], df['标题'], df['正文'], df['阅读数'], df['发布时间']
     return position, title, body, y, time
 
 print('Start to prepare data...')
@@ -42,10 +43,12 @@ position_test, title_test, body_test, y_test, time_test = getData(df_test)
 saveToTxt(position_train, opt.data + 'position_train.txt')
 saveToTxt(title_train, opt.data + 'title_train.txt')
 saveToTxt(body_train, opt.data + 'body_train.txt')
+saveToTxt(time_train, opt.data + 'time_train.txt')
 saveToTxt(y_train, opt.data + 'y_train.txt')
 saveToTxt(position_test, opt.data + 'position_test.txt')
 saveToTxt(title_test, opt.data + 'title_test.txt')
 saveToTxt(body_test, opt.data + 'body_test.txt')
+saveToTxt(time_test, opt.data + 'time_test.txt')
 saveToTxt(y_test, opt.data + 'y_test.txt')
 
 print('Data preparation done.')

@@ -8,11 +8,14 @@ import argparse
 from sklearn.metrics import accuracy_score, confusion_matrix
 import scipy.sparse
 import copy
+import sys
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--log', action='store_true',
                     help='if true, y = log(y + 1)')
+parser.add_argument('--label', default='upvote',
+                    help='upvote | view | position')
 parser.add_argument('--crit', default='mse', type=str, help='mse | mae | acc')
 parser.add_argument('--model', default='lasso', type=str, help='lasso | rf | svm | random | random_small')
 parser.add_argument('--classification', action='store_true',
@@ -24,15 +27,16 @@ opt = parser.parse_args()
 print(opt)
 
 
-def filter_text(X, T, Y, P):
-    f_X, f_t, f_y, f_p = [], [], [], []
-    for x, t, y, p in zip(X, T, Y, P):
+def filter_text(X, T, Y, P, TIME):
+    f_X, f_t, f_y, f_p, f_time = [], [], [], [], []
+    for x, t, y, p, time in zip(X, T, Y, P, TIME):
         if len(x.split()) > 10:
             f_X.append(x)
             f_t.append(t)
             f_y.append(y)
             f_p.append(p)
-    return f_X, f_t, f_y, f_p
+            f_time.append(time)
+    return f_X, f_t, f_y, f_p, f_time
 
 
 def criterion(crit, pred, y):
@@ -45,83 +49,61 @@ def criterion(crit, pred, y):
         loss = accuracy_score(y, pred)
     return loss
     
-def get_posts_by_day(tf_test):
+
+def get_posts_by_day(tf_test, time_test):
     test = copy.deepcopy(tf_test)
     test = np.array(test.todense())    
     posts_by_day = []
-    start_index = 0 # starting point of slicing a day
+    start_index, end_index = 0, 0
     length = len(test)
-    print('*****Enter get_posts_by_day function*****')
-    print('test shape before adding index: ', test.shape)
-    # add index to the last column
-    id = [i for i in range(length)]
-    test = np.insert(test, len(test[0]), id, axis=1)
-    print('test shape after adding index: ', test.shape)
-    
+    print('Start to get posts by day in test data...')
+    #print('test shape: ', test.shape)
+    #print('time_test length: ', len(time_test))
     
     for i in range(length):
-        if test[i][len(test[0]) - 2] == 0: # position
+        #if(i<10):
+        #    print(time_test[i])
+        #    print(time_test[i+1])
+        if i+1 < length and \
+           time_test[i+1] != time_test[i]: # compare time string
             end_index = i
-            if end_index != 0:
-                #print("***")
-                #print(start_index, ' ', end_index)
-                posts_by_day.append(test[start_index:end_index])
-            start_index = i
-        elif i == length - 1:
-            end_index = i
-    if start_index != end_index:
-        posts_by_day.append(test[start_index:end_index])
-    print('posts_by_day length: ', len(posts_by_day))
+            #print(start_index)
+            #print(end_index)
+            posts_by_day.append(test[start_index:end_index+1, 0:len(test[0])])
+            start_index = i+1            
+    
+    posts_by_day.append(test[start_index:, 0:len(test[0])])
+    print('Total days in test data: ', len(posts_by_day))
     #print("each day's posts' shape: ")
     #for p in posts_by_day:
     #    print(p.shape)
-    return posts_by_day 
+    return posts_by_day
    
-def predict(model, posts_by_day, tf_test):
-    print('****Enter predict function****')
-    test = copy.deepcopy(tf_test)
-    test = np.array(test.todense())
-    # add index to the last column
-    length = len(test)
-    id = [i for i in range(length)]
-    test = np.insert(test, len(test[0]), id, axis=1)
-    print('test data: ', test.shape)
-    
-    if opt.classification:
-        test_pred = np.empty((length,1),dtype="int" )
-    else:
-        test_pred = np.empty((length,1))
-        
+
+def predict_position(model, posts_by_day):
+    prediction = []
     for daily_posts in posts_by_day:
-        #print("each day's posts' shape: ", daily_posts.shape)
+        # number of posts on some day
         num = len(daily_posts)
-        posts = copy.deepcopy(daily_posts)
+        max_indecis = [-sys.maxsize-1] * num
         for i in range(num):
-            if i == num - 1:
-                # note: daily_posts still has index as the last column
-                pred = model.predict(posts[:,0:len(posts[0])-1])
-                index = posts[0][-1]
-                test_pred[int(index)] = pred
-            # set position to be i
-            posts[:,len(posts[0])-2] = i
-            # predict 
-            temp_predict = model.predict(posts[:,0:len(posts[0])-1])
-            #print(temp_predict.shape)
-            # find max
-            max_predict = temp_predict.max()
-            # find the index of max in prediction array and in posts
-            index_max_in_daily_predict = max_predict.argmax()
-            index_max_in_total_data = posts[index_max_in_daily_predict][-1]
-            #print('index_max_in_daily_predict: ', index_max_in_daily_predict)
-            #print ('index_max_in_total_data: ', index_max_in_total_data)
-            # add prediction to final results
-            test_pred[int(index_max_in_total_data)] = max_predict
-            # delete max record from posts
-            posts = np.delete(posts, (index_max_in_daily_predict), axis=0)
-    print('test_pred length: ', len(test_pred))
-    return test_pred
+            # set position all to be i
+            daily_posts[:,len(daily_posts[0])-2] = i
+            max_view = -sys.maxsize-1
+            for j in range(num):
+                
+                if max_indecis[j] != -sys.maxsize-1:
+                    continue
+                predict_view = model.predict(daily_posts[j].reshape(1,-1))
+                if predict_view > max_view:
+                    max_view = predict_view
+                    max_index = j
+            max_indecis[max_index] = i
+        prediction.append(max_indecis)
+    prediction = [val for sublist in prediction for val in sublist]
+    return np.array(prediction)
             
-def regression(model, tf_train, tf_test, y_train, y_test):
+def regression(model, tf_train, tf_test, y_train, y_test, time_test):
     if model == 'random':
         #np.random.seed(1234)
         #val_pred = (np.max(y_train) - np.min(y_train)) * \
@@ -140,13 +122,13 @@ def regression(model, tf_train, tf_test, y_train, y_test):
     else:
         model.fit(tf_train, y_train)
         #val_pred = model.predict(tf_val)
-        #test_pred = model.predict(tf_test)
-        posts_by_day = get_posts_by_day(tf_test)
-        test_pred = predict(model, posts_by_day, tf_test)
+        test_pred = model.predict(tf_test)
+        #posts_by_day = get_posts_by_day(tf_test, time_test)
+        #test_pred = predict_position(model, posts_by_day)
     return test_pred
 
 
-def classify(model, tf_train, tf_test, y_train, y_test):
+def classify(model, tf_train, tf_test, y_train, y_test, time_test):
     if model == 'random':
         np.random.seed(1234)
         test_pred = np.random.randint(np.min(y_test), np.max(y_test) + 1, y_test.shape)
@@ -155,32 +137,38 @@ def classify(model, tf_train, tf_test, y_train, y_test):
     else:
         model.fit(tf_train, y_train)
         #test_pred = model.predict(tf_test)
-        posts_by_day = get_posts_by_day(tf_test)
-        test_pred = predict(model, posts_by_day, tf_test)
+        posts_by_day = get_posts_by_day(tf_test, time_test)
+        #posts_by_day = get_posts_by_day_old(tf_test)
+        test_pred = predict_position(model, posts_by_day)
     return test_pred
 
 
 
 def main():
     X_train, X_test, t_train, t_test, \
-        y_train, y_test, p_train, p_test = utils.loadTrainingTestData()
+        y_train, y_test, p_train, p_test, time_train, time_test = utils.loadTrainingTestData()
 
     print('Original dataset: train | test')
     print(len(X_train), len(X_test))
-    assert len(X_train) == len(t_train) == len(y_train) == len(p_train), \
-        'train size of texts, titles, labels, positions not match'
-    assert len(X_test) == len(t_test) == len(y_test) == len(p_test), \
-        'test size of texts, titles, labels, positions not match'
+    assert len(X_train) == len(t_train) == len(y_train) == len(p_train) == len(time_train), \
+        'train size of texts, titles, labels, positions, time not match'
+    assert len(X_test) == len(t_test) == len(y_test) == len(p_test) == len(time_test), \
+        'test size of texts, titles, labels, positions, time not match'
 
-    X_train, t_train, y_train, p_train = filter_text(X_train, t_train, y_train, p_train)
-    X_test, t_test, y_test, p_test = filter_text(X_test, t_test, y_test, p_test)
+    X_train, t_train, y_train, p_train, time_train = filter_text(X_train, t_train, y_train, p_train, time_train)
+    X_test, t_test, y_test, p_test, time_test = filter_text(X_test, t_test, y_test, p_test, time_test)
     print('filtered dataset: train | test')
     print(len(X_train), len(X_test))
-    assert len(X_train) == len(t_train) == len(y_train) == len(p_train), \
-        'train size of texts, titles, labels, positions not match'
-    assert len(X_test) == len(t_test) == len(y_test) == len(p_test), \
-        'test size of texts, titles, labels, positions not match'
+    assert len(X_train) == len(t_train) == len(y_train) == len(p_train) == len(time_train), \
+        'train size of texts, titles, labels, positions, time not match'
+    assert len(X_test) == len(t_test) == len(y_test) == len(p_test) == len(time_test), \
+        'test size of texts, titles, labels, positions, time not match'
 
+    # store filtered y_test
+    thefile = open('y_test.txt', 'w')
+    for item in y_test:
+        thefile.write("%s\n" % item)
+    
     # print(sorted(X_train, key=lambda x: len(x))[:3])
 
     y_train, y_test = np.array(y_train), np.array(y_test)
@@ -243,18 +231,23 @@ def main():
 
     if opt.classification:
         test_pred = classify(model, tf_train, tf_test,
-                                       y_train, y_test)
+                                       y_train, y_test, time_test)
     else:
         test_pred = regression(model, tf_train, tf_test,
-                                         y_train, y_test)
+                                         y_train, y_test, time_test)
 
+    # save view predictions to txt file
+    thefile = open('test_predictions.txt', 'w')
+    for item in test_pred:
+        thefile.write("%s\n" % item)
+        
     crit = opt.crit
     print('criterion', crit)
-    test_loss = criterion(crit, test_pred, y_test)
+    test_loss = criterion(crit, test_pred, p_test)
     print('test_loss', test_loss)
-    print(test_pred.shape, y_test.shape)
+    print(test_pred.shape, p_test.shape)
     print('confusion matrix')
-    print(confusion_matrix(y_test, test_pred))
+    print(confusion_matrix(p_test, test_pred))
 
     
 if __name__ == "__main__":

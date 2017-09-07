@@ -43,4 +43,6 @@ def loadTrainingTestData():
                               loadUpvotes(os.path.join(path, 'y_test.txt')))
     p_train, p_test = (loadUpvotes(os.path.join(path, 'position_train.txt')),
                               loadUpvotes(os.path.join(path, 'position_test.txt')))
-    return X_train, X_test, title_train, title_test, y_train, y_test, p_train, p_test
+    time_train, time_test = (loadText(os.path.join(path, 'time_train.txt')),
+                              loadText(os.path.join(path, 'time_test.txt')))
+    return X_train, X_test, title_train, title_test, y_train, y_test, p_train, p_test, time_train, time_test
