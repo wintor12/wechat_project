@@ -121,10 +121,8 @@ def regression(model, tf_train, tf_test, y_train, y_test, time_test):
             test_pred = 10 * test_pred
     else:
         model.fit(tf_train, y_train)
-        #val_pred = model.predict(tf_val)
-        test_pred = model.predict(tf_test)
-        #posts_by_day = get_posts_by_day(tf_test, time_test)
-        #test_pred = predict_position(model, posts_by_day)
+        posts_by_day = get_posts_by_day(tf_test, time_test)
+        test_pred = predict_position(model, posts_by_day)
     return test_pred
 
 
@@ -138,7 +136,6 @@ def classify(model, tf_train, tf_test, y_train, y_test, time_test):
         model.fit(tf_train, y_train)
         #test_pred = model.predict(tf_test)
         posts_by_day = get_posts_by_day(tf_test, time_test)
-        #posts_by_day = get_posts_by_day_old(tf_test)
         test_pred = predict_position(model, posts_by_day)
     return test_pred
 
